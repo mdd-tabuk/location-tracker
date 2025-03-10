@@ -4,55 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Track User Location</title>
-</head>
-<body>
-    <h1>Tracking User Location</h1>
-    <button onclick="getLocation()">Get My Location</button>
-
     <script>
-        function getLocation() {
+        const SUPABASE_URL = https://hjztzmbcfkoawkiuztcj.supabase.co";  // Replace with your Supabase Project URL
+        const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqenR6bWJjZmtvYXdraXV6dGNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE1OTgyMTgsImV4cCI6MjA1NzE3NDIxOH0.lePm_2mbKRhPwDbRwbG4BDMazgYB0WzvMr3JBt1Gp8c";  // Replace with your Supabase API key
+
+        async function getLocation() {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(sendLocation, showError);
+                navigator.geolocation.getCurrentPosition(saveLocation, showError);
             } else {
-                alert("Geolocation is not supported by this browser.");
+                alert("Geolocation is not supported.");
             }
         }
 
-        function sendLocation(position) {
+        async function saveLocation(position) {
             const data = {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude
             };
 
-            console.log("User Location:", data);  // This will show coordinates in the browser console
-
-            // Send location to backend
-            fetch('https://your-backend-server.com/api/location', { // Replace with your backend URL
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/locations`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "apikey": SUPABASE_API_KEY,
+                    "Authorization": `Bearer ${SUPABASE_API_KEY}`
+                },
                 body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => console.log("Location saved:", data))
-            .catch(error => console.error("Error:", error));
+            });
+
+            if (response.ok) {
+                alert("Location saved!");
+            } else {
+                alert("Error saving location.");
+            }
         }
 
         function showError(error) {
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    alert("User denied the request for Geolocation.");
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    alert("Location information is unavailable.");
-                    break;
-                case error.TIMEOUT:
-                    alert("The request to get user location timed out.");
-                    break;
-                case error.UNKNOWN_ERROR:
-                    alert("An unknown error occurred.");
-                    break;
-            }
+            alert("Error getting location: " + error.message);
         }
     </script>
+</head>
+<body>
+    <h1>Tracking User Location</h1>
+    <button onclick="getLocation()">Get My Location</button>
 </body>
 </html>
