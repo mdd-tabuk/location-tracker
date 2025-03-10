@@ -3,10 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Track User Location</title>
-    <script>
-        const SUPABASE_URL = https://hjztzmbcfkoawkiuztcj.supabase.co";  // Replace with your Supabase Project URL
-        const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqenR6bWJjZmtvYXdraXV6dGNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE1OTgyMTgsImV4cCI6MjA1NzE3NDIxOH0.lePm_2mbKRhPwDbRwbG4BDMazgYB0WzvMr3JBt1Gp8c";  // Replace with your Supabase API key
+    <title>Live User Locations</title>
+    <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"></script>
+    <script type="module">
+        import { createClient } from "https://esm.sh/@supabase/supabase-js";
+
+        const SUPABASE_URL = https://hjztzmbcfkoawkiuztcj.supabase.co";
+        const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqenR6bWJjZmtvYXdraXV6dGNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE1OTgyMTgsImV4cCI6MjA1NzE3NDIxOH0.lePm_2mbKRhPwDbRwbG4BDMazgYB0WzvMr3JBt1Gp8c";
+        const supabase = createClient(SUPABASE_URL, SUPABASE_API_KEY);
+
+        let map;
+
+        async function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 25.276987, lng: 55.296249 }, // Default: Dubai
+                zoom: 5
+            });
+
+            await loadLocations();
+        }
 
         async function getLocation() {
             if (navigator.geolocation) {
@@ -22,30 +37,43 @@
                 longitude: position.coords.longitude
             };
 
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/locations`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "apikey": SUPABASE_API_KEY,
-                    "Authorization": `Bearer ${SUPABASE_API_KEY}`
-                },
-                body: JSON.stringify(data)
-            });
+            const { error } = await supabase.from("locations").insert([data]);
 
-            if (response.ok) {
-                alert("Location saved!");
-            } else {
+            if (error) {
                 alert("Error saving location.");
+                console.error(error);
+            } else {
+                alert("Location saved!");
+                loadLocations(); // Refresh map
             }
+        }
+
+        async function loadLocations() {
+            const { data, error } = await supabase.from("locations").select("*");
+
+            if (error) {
+                console.error("Error fetching locations:", error);
+                return;
+            }
+
+            data.forEach((location) => {
+                new google.maps.Marker({
+                    position: { lat: location.latitude, lng: location.longitude },
+                    map: map
+                });
+            });
         }
 
         function showError(error) {
             alert("Error getting location: " + error.message);
         }
+
+        window.initMap = initMap;
     </script>
 </head>
 <body>
-    <h1>Tracking User Location</h1>
-    <button onclick="getLocation()">Get My Location</button>
+    <h1>User Locations Map</h1>
+    <button onclick="getLocation()">Share My Location</button>
+    <div id="map" style="width: 100%; height: 500px;"></div>
 </body>
 </html>
